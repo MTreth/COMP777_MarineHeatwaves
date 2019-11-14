@@ -1,0 +1,170 @@
+This code creates the new data set used in this assessment, which observed the 2016 marine heatwave in the Great Barrier Reef, Australia
+* Changed the latitude and longitude coordinates to specify the region
+
+# The two packages we will need
+# NB: The packages only need to be installed from GitHub once
+# devtools::install_github("tidyverse/tidyverse")
+# devtools::install_github("ropensci/rerddap")
+
+# Load the packages once they have been downloaded and installed
+library(tidyverse)
+library(rerddap)
+
+# The information for the NOAA OISST data
+rerddap::info(datasetid = "ncdc_oisst_v2_avhrr_by_time_zlev_lat_lon", url = "https://www.ncei.noaa.gov/erddap/")
+
+# This function expects the user to provide it with a start and end date
+# It then downloads and prepares the data
+OISST_sub <- function(time_df){
+  oisst_res <- griddap(x = "ncdc_oisst_v2_avhrr_by_time_zlev_lat_lon", 
+                       url = "https://www.ncei.noaa.gov/erddap/", 
+                       time = c(time_df$start, time_df$end), 
+                       depth = c(0, 0),
+                       latitude = c(-10, -24),
+                       longitude = c(142, 155),
+                       fields = "sst")$data %>% 
+    mutate(time = as.Date(str_remove(time, "T00:00:00Z"))) %>% 
+    dplyr::rename(t = time, temp = sst) %>% 
+    select(lon, lat, t, temp) %>% 
+    na.omit()
+}
+
+# Date download range by start and end dates per year
+dl_years <- data.frame(date_index = 1:5,
+                       start = as.Date(c("1982-01-01", "1990-01-01", 
+                                         "1998-01-01", "2006-01-01", "2014-01-01")),
+                       end = as.Date(c("1989-12-31", "1997-12-31", 
+                                       "2005-12-31", "2013-12-31", "2018-12-31")))
+
+# Download all of the data with one nested request
+# The time this takes will vary greatly based on connection speed
+system.time(
+  OISST_data <- dl_years %>% 
+    group_by(date_index) %>% 
+    group_modify(~OISST_sub(.x)) %>% 
+    ungroup() %>% 
+    select(lon, lat, t, temp)
+) # 921 seconds, ~184 seconds per batch
+
+# Save the data as an .Rda file as it has a much better compression rate than .RData
+saveRDS(OISST_data, file = "~/Desktop/OISST_vignette.Rda")
+
+library(tidyverse)
+library(heatwaveR)
+OISST <- read_rds("~/Desktop/OISST_vignette.Rda")
+
+event_only <- function(df){
+  # First calculate the climatologies
+  clim <- ts2clm(data = df, climatologyPeriod = c("1982-01-01", "2011-01-01"))
+  # Then the events
+  event <- detect_event(data = clim)
+  # Return only the event metric dataframe of results
+  return(event$event)
+}
+system.time(
+  # First we start by chosing the 'OISST' dataframe
+  GBR_dplyr <- OISST %>% 
+    # Then we group the data by the 'lon' and 'lat' columns
+    group_by(lon, lat) %>% 
+    # Then we run our MHW calculating function on each group
+    group_modify(~event_only(.x))
+) # 214 seconds
+# NB: One should never use ALL available cores, save at least 1 for other essential tasks
+# The computer I'm writing this vignette on has 4 cores, so I use 3 here
+library(doMC)
+registerDoMC(cores = 3)
+
+system.time(
+  GBR_plyr <- plyr::ddply(.data = OISST, .variables = c("lon", "lat"), .fun = event_only, .parallel = TRUE)
+) # 129 seconds
+for(i in 1:length(unique(OISST$lon))){
+  OISST_sub <- OISST %>% 
+    filter(lon == unique(lon)[i])
+  saveRDS(object = OISST_sub, file = paste0("~/Desktop/OISST_lon_",i,".Rda"))
+}
+# The 'dplyr' wrapper function to pass to 'plyr'
+dplyr_wraper <- function(file_name){
+  GBR_dplyr <- readRDS(file_name) %>% 
+    group_by(lon, lat) %>% 
+    group_modify(~event_only(.x))
+}
+
+# Create a vector of the files we want to use
+OISST_files <- dir("~/Desktop", pattern = "OISST_lon_*", full.names = T)
+
+# Use 'plyr' technique to run 'dplyr' technique with multiple cores
+system.time(
+  GBR_result <- plyr::ldply(OISST_files, .fun = dplyr_wraper, .parallel = T)
+)# 128
+# summarise the number of unique longitude, latitude and year combination:
+event_freq <- GBR_result %>% 
+  mutate(year = lubridate::year(date_start)) %>% 
+  group_by(lon, lat, year) %>% 
+  summarise(n = n())
+head(event_freq)
+
+# create complete grid for merging with:
+sst_grid <- OISST %>% 
+  select(lon, lat, t) %>% 
+  mutate(t = lubridate::year(t)) %>% 
+  dplyr::rename(year = t) %>% 
+  distinct()
+
+# and merge:
+OISST_n <- left_join(sst_grid, event_freq, by = c("lon", "lat", "year")) %>% 
+  mutate(n = ifelse(is.na(n), 0, n))
+lin_fun <- function(ev) {
+  mod1 <- glm(n ~ year, family = poisson(link = "log"), data = ev)
+  # extract slope coefficient and its p-value
+  tr <- data.frame(slope = summary(mod1)$coefficients[2,1],
+                   p = summary(mod1)$coefficients[2,4])
+  return(tr)
+}
+OISST_nTrend <- OISST_n %>% 
+  group_by(lon, lat) %>% 
+  group_modify(~lin_fun(.x)) %>% 
+  mutate(pval = cut(p, breaks = c(0, 0.001, 0.01, 0.05, 1)))
+head(OISST_nTrend)
+OISST_nTrend <- plyr::ddply(OISST_n, c("lon", "lat"), lin_fun, .parallel = T)
+OISST_nTrend$pval <- cut(OISST_nTrend$p, breaks = c(0, 0.001, 0.01, 0.05, 1))
+head(OISST_nTrend)
+# The base map
+map_base <- ggplot2::fortify(maps::map(fill = TRUE, plot = FALSE)) %>% 
+  dplyr::rename(lon = long)
+map_slope <- ggplot(OISST_nTrend, aes(x = lon, y = lat)) +
+  geom_rect(size = 0.2, fill = NA,
+            aes(xmin = lon - 0.1, xmax = lon + 0.1, ymin = lat - 0.1, ymax = lat + 0.1,
+                colour = pval)) +
+  geom_raster(aes(fill = slope), interpolate = FALSE, alpha = 0.9) +
+  scale_fill_gradient2(name = "count/year (slope)", high = "red", mid = "white",
+                       low = "darkblue", midpoint = 0,
+                       guide = guide_colourbar(direction = "horizontal",
+                                               title.position = "top")) +
+  scale_colour_manual(breaks = c("(0,0.001]", "(0.001,0.01]", "(0.01,0.05]", "(0.05,1]"),
+                      values = c("firebrick1", "firebrick2", "firebrick3", "white"),
+                      name = "p-value", guide = FALSE) +
+  geom_polygon(data = map_base, aes(group = group), 
+               colour = NA, fill = "grey80") +
+  coord_fixed(ratio = 1, xlim = c(13.0, 23.0), ylim = c(-33, -42), expand = TRUE) +
+  labs(x = "", y = "") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+map_p <- ggplot(OISST_nTrend, aes(x = lon, y = lat)) +
+  geom_raster(aes(fill = pval), interpolate = FALSE) +
+  scale_fill_manual(breaks = c("(0,0.001]", "(0.001,0.01]", "(0.01,0.05]",
+                               "(0.05,0.1]", "(0.1,0.5]", "(0.5,1]"),
+                    values = c("black", "grey20", "grey40",
+                               "grey80", "grey90", "white"),
+                    name = "p-value",
+                    guide = guide_legend(direction = "horizontal",
+                                         title.position = "top")) +
+  geom_polygon(data = map_base, aes(group = group), 
+               colour = NA, fill = "grey80") +
+  coord_fixed(ratio = 1, xlim = c(13.0, 23.0), ylim = c(-33, -42), expand = TRUE) +
+  labs(x = "", y = "") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+map_both <- ggpubr::ggarrange(map_slope, map_p, align = "hv")
+map_both
