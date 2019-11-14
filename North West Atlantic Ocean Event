@@ -1,4 +1,4 @@
-# This code can be run to observe the data from the North West Atlantic Ocean marine heatwave event in 2012 event 
+This code can be run to observe the data from the North West Atlantic Ocean marine heatwave event in 2012 event 
 
 # Following heatwave.R code
 head(heatwaveR::sst_NW_Atl)
