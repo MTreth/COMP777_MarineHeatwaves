@@ -1,0 +1,34 @@
+This code can be run to observe the data for the Mediterranean Sea 2003 marine heatwave event
+
+# Following heatwave.R code
+head(heatwaveR::sst_Med)
+
+# Load libraries
+library(tidyverse)
+library(heatwaveR)
+
+# Detect the events in a time series
+Med_ts <- ts2clm(sst_Med, climatologyPeriod = c("1982-01-01", "2011-12-31"))
+Med_mhw <- detect_event(Med_ts)
+
+# View just a few metrics
+Med_mhw$event %>% 
+  dplyr::ungroup() %>%
+  dplyr::select(event_no, duration, date_start, date_peak, intensity_max, intensity_cumulative) %>% 
+  dplyr::arrange(-intensity_max) %>% 
+  head(5)
+
+Med_mhw$event %>% 
+  dplyr::ungroup() %>%
+  dplyr::select(event_no, duration, date_start, date_peak, intensity_max, duration) %>% 
+  dplyr::arrange(-intensity_max) %>% 
+  head(5)
+
+event_line(Med_mhw, spread = 180, metric = "intensity_mean", 
+           start_date = "1982-01-01", end_date = "2014-12-31")
+
+lolli_plot(Med_mhw, metric = "intensity_max")
+
+lolli_plot(Med_mhw, metric = "duration")
+
+lolli_plot(Med_mhw, metric = "intensity_cumulative")
