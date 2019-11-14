@@ -7,10 +7,15 @@ The code used has been sourced from Eric C. J. Oliver' "marineHeatWaves" GitHub 
 
 # Contents
 Original_R_Code : this is the code sourced from https://robwschlegel.github.io/heatwaveR/index.html
+
 Western Australia Event: this code was used for gathering data and creating the graphs regarding the Western Australia 2011 marine heatwave in Hobday et al. (2016)
+
 Mediterranean Sea Event: this code was used for gathering data and creating the graphs regarding the Mediterranean 2003 marine heatwave in Hobday et al. (2016)
+
 North West Atlantic Ocean Event: this code was used for gathering data and creating the graphs regarding the North West Atlantic Ocean 2012 marine heatwave event in Hobday et al. (2016)
+
 Creating New Data: this code, from https://robwschlegel.github.io/heatwaveR/index.html, was used to get data from the internet regarding the Great Barrier Reef 2016 marine heatwave 
+
 Great Barrier Reef Event: the data from the code created before was then run through the code used for the other 3 events to understand the replicability of the RStudio Script
 
 # Acknowledgements 
