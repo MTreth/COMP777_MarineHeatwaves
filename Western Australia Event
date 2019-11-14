@@ -1,0 +1,36 @@
+The following code can be run to observe the data for the 2011 Western Australia (Indian Ocean) marine heatwave
+
+# The Western Australia Data 
+# Following heatwave.R code
+head(heatwaveR::sst_WA)
+view(sst_WA)
+
+# Load libraries
+library(tidyverse)
+library(heatwaveR)
+
+# Detect the events in a time series
+WA_ts <- ts2clm(sst_WA, climatologyPeriod = c("1982-01-01", "2011-12-31"))
+WA_mhw <- detect_event(WA_ts)
+
+# View just a few metrics
+WA_mhw$event %>% 
+  dplyr::ungroup() %>%
+  dplyr::select(event_no, duration, date_start, date_peak, intensity_max, intensity_cumulative) %>% 
+  dplyr::arrange(-intensity_max) %>% 
+  head(5)
+
+WA_mhw$event %>% 
+  dplyr::ungroup() %>%
+  dplyr::select(event_no, duration, date_start, date_peak, intensity_max, duration) %>% 
+  dplyr::arrange(-intensity_max) %>% 
+  head(5)
+
+event_line(WA_mhw, spread = 180, metric = "intensity_max", 
+           start_date = "1982-01-01", end_date = "2014-12-31")
+
+lolli_plot(WA_mhw, metric = "intensity_max")
+
+lolli_plot(WA_mhw, metric = "duration")
+
+lolli_plot(WA_mhw, metric = "intensity_cumulative")
