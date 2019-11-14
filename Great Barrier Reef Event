@@ -1,0 +1,30 @@
+This code uses the previously downloaded data set and runs it through the original code to observe the marine heatwave event that occured on the Great Barrier Reef, Australia, in 2016
+
+# Load libraries
+library(tidyverse)
+library(heatwaveR)
+
+# Detect the events in a time series
+GBR_ts <- ts2clm(OISST_data, climatologyPeriod = c("1982-01-01", "2018-12-31"))
+GBR_mhw <- detect_event(ts)
+
+# View just a few metrics
+GBR_mhw$event %>% 
+  dplyr::ungroup() %>%
+  dplyr::select(event_no, duration, date_start, date_peak, intensity_max, intensity_cumulative) %>% 
+  dplyr::arrange(-intensity_max) %>% 
+  head(5)
+
+GBR_mhw$event %>% 
+  dplyr::select(event_no, duration, date_start, date_peak, intensity_max, duration) %>% 
+  dplyr::arrange(-intensity_max) %>% 
+  head(5)
+
+event_line(GBR_mhw, spread = 180, metric = "intensity_max", 
+           start_date = "2016-01-01", end_date = "2016-12-31")
+
+lolli_plot(GBR_mhw, metric = "intensity_max")
+
+lolli_plot(GBR_mhw, metric = "duration")
+
+lolli_plot(GBR_mhw, metric = "intensity_cumulative")
