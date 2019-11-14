@@ -1,0 +1,35 @@
+# This code can be run to observe the data from the North West Atlantic Ocean marine heatwave event in 2012 event 
+
+# Following heatwave.R code
+head(heatwaveR::sst_NW_Atl)
+view(heatwaveR::sst_NW_Atl)
+
+# Load libraries
+library(tidyverse)
+library(heatwaveR)
+
+# Detect the events in a time series
+Atl_ts <- ts2clm(sst_NW_Atl, climatologyPeriod = c("1982-01-01", "2011-12-31"))
+Atl_mhw <- detect_event(Atl_ts)
+
+# View just a few metrics
+Atl_mhw$event %>% 
+  dplyr::ungroup() %>%
+  dplyr::select(event_no, duration, date_start, date_peak, intensity_max, intensity_cumulative) %>% 
+  dplyr::arrange(-intensity_max) %>% 
+  head(5)
+
+Atl_mhw$event %>% 
+  dplyr::ungroup() %>%
+  dplyr::select(event_no, duration, date_start, date_peak, intensity_max, duration) %>% 
+  dplyr::arrange(-intensity_max) %>% 
+  head(5)
+
+event_line(Atl_mhw, spread = 180, metric = "intensity_max", 
+           start_date = "1982-01-01", end_date = "2014-12-31")
+
+lolli_plot(Atl_mhw, metric = "intensity_max")
+
+lolli_plot(Atl_mhw, metric = "duration")
+
+lolli_plot(Atl_mhw, metric = "intensity_cumulative")
