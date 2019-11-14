@@ -168,3 +168,4 @@ map_p <- ggplot(OISST_nTrend, aes(x = lon, y = lat)) +
 
 map_both <- ggpubr::ggarrange(map_slope, map_p, align = "hv")
 map_both
+
