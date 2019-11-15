@@ -2,6 +2,7 @@ The following code can be run to observe the data for the 2011 Western Australia
 
 # The Western Australia Data 
 # Following heatwave.R code
+install.packages("heatwaveR")
 head(heatwaveR::sst_WA)
 view(sst_WA)
 
