@@ -20,7 +20,7 @@ Creating New Data: this code, from https://robwschlegel.github.io/heatwaveR/inde
 
 Great Barrier Reef Event: the data from the code created before was then run through the code used for the other 3 events to understand the replicability of the RStudio Script
 
-Cohen's Kappa Agreement Analysis: this image highlights the calculations made to observe the agreement between 2 observers of the replication of the original dataset
+Cohen's Kappa: this image highlights the calculations made, using a Cohen's Kappa Agreement Analysis, to observe the agreement between 2 observers regarding the replication of the original dataset
 
 # Acknowledgements 
 Robert Schlegel for the RStudio Script, which recreated the original dataset and established the new data https://robwschlegel.github.io/heatwaveR/index.html
