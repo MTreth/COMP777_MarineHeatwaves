@@ -1,5 +1,7 @@
 The following script is suited for RStudio and was sorted from https://robwschlegel.github.io/heatwaveR/index.html
 
+* ensure that necessary packages (such as "tidyverse" and "heatwaveR") installed for an efficient run
+
 # Following heatwave.R code
 install.packages("heatwaveR")
 head(heatwaveR::sst_WA)
