@@ -22,5 +22,11 @@ Great Barrier Reef Event: the data from the code created before was then run thr
 
 Cohen's Kappa: this image highlights the calculations made, using a Cohen's Kappa Agreement Analysis, to observe the agreement between 2 observers regarding the replication of the original dataset
 
+New_Data_Access: this provides a link to a GoogleDrive containing a .csv of the raw data created from the "Creating New Data" code. Based on the Great Barrier Reef, size = 1.2GB
+
+SupplementaryMaterial.pdf: this is a pdf document of each of the figures referred to in the manuscript 
+
+Trethewy__44883005_COMP777_Major_Project.pdf: this is a pdf of the Major Project manuscript. This was produced using Latex and has been submitted on iLearn
+
 # Acknowledgements 
 Robert Schlegel for the RStudio Script, which recreated the original dataset and established the new data https://robwschlegel.github.io/heatwaveR/index.html
